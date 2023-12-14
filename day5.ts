@@ -7,6 +7,7 @@ export const f = async () => {
   const desiredSeeds: number[] = [];
   let previousSeedsMap = {};
   let currentSeedMap = {};
+  let stepNr = 0;
 
   lines.forEach((line) => {
     const seedsLineData = line.match(/seeds: (.*)/);
@@ -20,8 +21,17 @@ export const f = async () => {
     }
 
     if (line.match(/^[a-z :]+/)) {
-      previousSeedsMap = { ...currentSeedMap };
-      currentSeedMap = { ...previousSeedsMap };
+      desiredSeeds.forEach((seed) => {
+        if (currentSeedMap[seed] === undefined) {
+          currentSeedMap[seed] = previousSeedsMap[seed];
+        }
+      });
+      console.log(`step ${stepNr}: `, currentSeedMap);
+
+      previousSeedsMap = currentSeedMap;
+      currentSeedMap = {};
+
+      stepNr++;
       return;
     }
     if (line === "") {
@@ -37,26 +47,22 @@ export const f = async () => {
     const sourceRangeStart = parseInt(numbers[2]);
     const count = parseInt(numbers[3]);
 
-    for (let i = 0; i < count; i++) {
-      const sourceToUpdate = Object.entries(previousSeedsMap).find(
-        ([_, destination]) => {
-          if (destination === sourceRangeStart + i) {
-            return true;
-          }
-          return false;
-        },
-      );
-
-      if (sourceToUpdate) {
-        currentSeedMap[sourceToUpdate[0]] = destinationRangeStart + i;
-      } else {
-        currentSeedMap[sourceRangeStart + i] = destinationRangeStart + i;
+    desiredSeeds.forEach((seed) => {
+      const destination = previousSeedsMap[seed];
+      if (
+        sourceRangeStart <= destination &&
+        destination < sourceRangeStart + count
+      ) {
+        currentSeedMap[seed] =
+          destinationRangeStart + (destination - sourceRangeStart);
       }
-    }
+    });
   });
 
-  console.log(desiredSeeds);
-  desiredSeeds.map((seed) => {
-    console.log(`${seed} -> ${currentSeedMap[seed]}`);
-  });
+  console.log(previousSeedsMap);
+
+  const min = desiredSeeds.reduce((min, seed) => {
+    return Math.min(min, previousSeedsMap[seed]);
+  }, Infinity);
+  console.log(min);
 };
