@@ -1,35 +1,44 @@
 import { readFile } from "node:fs/promises";
 
 const type = (hand: string[]) => {
+  let jokers = 0;
   const counts = hand.reduce((acc, card) => {
+    if (card === "J") {
+      jokers++;
+      return acc;
+    }
+
     acc[card] ||= 0;
     acc[card] = acc[card] + 1;
     return acc;
   }, {});
 
   const values = Object.values(counts);
-  if (values.some((x) => x === 5)) {
+  if (jokers === 5 || values.some((x) => x === 5 - jokers)) {
     return 7;
   }
-  if (values.some((x) => x === 4)) {
+  if (values.some((x) => x === 4 - jokers)) {
     return 6;
   }
   if (values.length === 2) {
     return 5;
   }
-  if (values.some((x) => x === 3)) {
+  if (values.some((x) => x === 3 - jokers)) {
     return 4;
   }
-  if (values.filter((x) => x === 2).length === 2) {
+  if (
+    values.filter((x) => x === 2).length === 2 ||
+    (values.length === 4 && jokers === 2)
+  ) {
     return 3;
   }
-  if (values.some((x) => x === 2)) {
+  if (values.some((x) => x === 2) || jokers) {
     return 2;
   }
   return 1;
 };
 
-const ordered = "23456789TJQKA".split("");
+const ordered = "J23456789TQKA".split("");
 
 export const f = async () => {
   const data = await readFile("day7.txt", { encoding: "utf8" });
@@ -73,4 +82,18 @@ export const f = async () => {
   }
 
   console.log(total);
+
+  console.log(type("AJJJJ".split("")));
+  console.log(type("JJJJJ".split("")));
+  console.log(type("AJJJA".split("")));
+  console.log(type("AJJJQ".split("")));
+  console.log(type("AJJQQ".split("")));
+  console.log(type("AJAQQ".split("")));
+  console.log(type("AJTQQ".split("")));
+
+  console.log(type("1224J".split("")));
+
+  console.log(type("12244".split("")));
+  console.log(type("1234J".split("")));
+  console.log(type("12345".split("")));
 };
