@@ -2,67 +2,107 @@ import { readFile } from "node:fs/promises";
 
 export const f = async () => {
   const data = await readFile("day5.txt", { encoding: "utf8" });
-  const lines = data.split("\n");
-
-  const desiredSeeds: number[] = [];
-  let previousSeedsMap = {};
-  let currentSeedMap = {};
-  let stepNr = 0;
-
-  lines.forEach((line) => {
-    const seedsLineData = line.match(/seeds: (.*)/);
-    if (seedsLineData) {
-      seedsLineData[1].split(" ").forEach((seed) => {
-        const s = parseInt(seed);
-        desiredSeeds.push(s);
-        currentSeedMap[s] = s;
-      });
-      return;
-    }
-
-    if (line.match(/^[a-z :]+/)) {
-      desiredSeeds.forEach((seed) => {
-        if (currentSeedMap[seed] === undefined) {
-          currentSeedMap[seed] = previousSeedsMap[seed];
-        }
-      });
-      console.log(`step ${stepNr}: `, currentSeedMap);
-
-      previousSeedsMap = currentSeedMap;
-      currentSeedMap = {};
-
-      stepNr++;
-      return;
-    }
-    if (line === "") {
-      return;
-    }
-
-    const numbers = line.match(/^([0-9]+) ([0-9]+) ([0-9]+)$/);
-    if (!numbers) {
-      console.error(`unknown line ${line}`);
-      return;
-    }
-    const destinationRangeStart = parseInt(numbers[1]);
-    const sourceRangeStart = parseInt(numbers[2]);
-    const count = parseInt(numbers[3]);
-
-    desiredSeeds.forEach((seed) => {
-      const destination = previousSeedsMap[seed];
-      if (
-        sourceRangeStart <= destination &&
-        destination < sourceRangeStart + count
-      ) {
-        currentSeedMap[seed] =
-          destinationRangeStart + (destination - sourceRangeStart);
-      }
+  const inputs = data.trim().split("\n\n");
+  let answer = Infinity;
+  let answer_p2 = Infinity;
+  let seeds = inputs[0]
+    .split(": ")[1]
+    .split(" ")
+    .map(function (str) {
+      return Number(str);
     });
+  let c1 = inputs[1].split(":\n")[1].split("\n");
+  let c2 = inputs[2].split(":\n")[1].split("\n");
+  let c3 = inputs[3].split(":\n")[1].split("\n");
+  let c4 = inputs[4].split(":\n")[1].split("\n");
+  let c5 = inputs[5].split(":\n")[1].split("\n");
+  let c6 = inputs[6].split(":\n")[1].split("\n");
+  let c7 = inputs[7].split(":\n")[1].split("\n");
+  // @ts-ignore
+  for (let i in c1) c1[i] = c1[i].split(" ");
+  // @ts-ignore
+  for (let i in c2) c2[i] = c2[i].split(" ");
+  // @ts-ignore
+  for (let i in c3) c3[i] = c3[i].split(" ");
+  // @ts-ignore
+  for (let i in c4) c4[i] = c4[i].split(" ");
+  // @ts-ignore
+  for (let i in c5) c5[i] = c5[i].split(" ");
+  // @ts-ignore
+  for (let i in c6) c6[i] = c6[i].split(" ");
+  // @ts-ignore
+  for (let i in c7) c7[i] = c7[i].split(" ");
+
+  //sort arrays descending based on source (index 1). Convert shit to nums
+  function order(c) {
+    c.sort((a, b) => {
+      return Number(b[1]) - Number(a[1]);
+    });
+    for (var i = 0; i < c.length; i++) {
+      c[i][0] = Number(c[i][0]);
+      c[i][1] = Number(c[i][1]);
+      c[i][2] = Number(c[i][2]);
+
+      //sometimes a map is missing the zero source value. Add it
+      if (i == c.length - 1 && c[i][1] != 0) {
+        c.push([0, 0, c[i][1]]);
+        break;
+      }
+    }
+    return c;
+  }
+
+  //same logic for all steps
+  function process(s, c) {
+    for (var i = 0; i < c.length; i++) {
+      //since arrays are sorted DESC, finding the first array where s >= c[1] means this is the input to look for
+      if (s >= c[i][1]) {
+        let top_range = c[i][1] + c[i][2] - 1;
+        //if source > top range, no modifier to destination, else modifier is the delta between source and destination
+        let modifier = s > top_range ? 0 : c[i][0] - c[i][1];
+        return s + modifier;
+      }
+    }
+  }
+
+  //numbers are too big to build individual maps. We'll be looking for ranges instead.
+  order(c1);
+  order(c2);
+  order(c3);
+  order(c4);
+  order(c5);
+  order(c6);
+  order(c7);
+
+  //process each seed and crawl through all steps
+  seeds.forEach((seed) => {
+    let x = process(
+      process(
+        process(process(process(process(process(seed, c1), c2), c3), c4), c5),
+        c6,
+      ),
+      c7,
+    );
+    answer = x < answer ? x : answer;
   });
+  console.log(answer);
 
-  console.log(previousSeedsMap);
-
-  const min = desiredSeeds.reduce((min, seed) => {
-    return Math.min(min, previousSeedsMap[seed]);
-  }, Infinity);
-  console.log(min);
+  //yolo (be patient! huge brute force is huge)
+  for (let i = 0; i < seeds.length; i += 2) {
+    for (let j = 0; j < seeds[i + 1]; j++) {
+      let x = process(
+        process(
+          process(
+            process(process(process(process(seeds[i] + j, c1), c2), c3), c4),
+            c5,
+          ),
+          c6,
+        ),
+        c7,
+      );
+      if (x < answer_p2) console.log("new best:" + x);
+      answer_p2 = x < answer_p2 ? x : answer_p2;
+    }
+  }
+  console.log("part 2 answer: " + answer_p2);
 };
